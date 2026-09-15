@@ -1,0 +1,6 @@
+{
+  "name": "LandVest - High-Yield DTCP Plot Investment Platform",
+  "description": "Premium DTCP approved plot investment platform featuring yearly ROI predictions, multi-currency NRI support, admin broadcast pipeline, and seller OTP portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
