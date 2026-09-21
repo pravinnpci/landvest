@@ -1,4 +1,4 @@
-name: Deploy LandVest to Vercel & Supabase
+name: Deploy LandVest to GitHub Pages & Vercel
 
 on:
   push:
@@ -7,10 +7,18 @@ on:
       - main
   workflow_dispatch:
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -29,6 +37,32 @@ jobs:
         env:
           VITE_API_URL: '/api'
 
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+  deploy-github-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-vercel:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         if: env.VERCEL_TOKEN != ''
@@ -40,10 +74,11 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deployment Info
+      - name: Print Deployment Status
         run: |
           echo "================================================="
-          echo "LandVest Build Successful!"
-          echo "Production Vercel Project: https://vercel.com/sapravin46-1821s-projects/landvest"
+          echo "GitHub Pages URL: https://pravinnpci.github.io/landvest/"
+          echo "Vercel Project: https://vercel.com/sapravin46-1821s-projects/landvest"
+          echo "Vercel Live URL: https://landvest-sapravin46-1821s-projects.vercel.app"
           echo "Supabase Project: https://supabase.com/dashboard/project/iloyapuzfyidxlezixfv"
           echo "================================================="
