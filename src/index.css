@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: clip;
+  background-color: #FAFCF9;
+}
+
+
 @layer base {
   :root {
     --brand-green: #68D800;
@@ -32,3 +41,47 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #68D800;
 }
+
+/* Dynamic Animations: Marquee & Sparkle */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.25) rotate(180deg); filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.9)); }
+}
+
+.animate-sparkle {
+  animation: sparkle 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(104, 216, 0, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(104, 216, 0, 0.8); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes float-badge {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: float-badge 3s ease-in-out infinite;
+}
+

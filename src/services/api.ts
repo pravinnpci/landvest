@@ -1,6 +1,6 @@
-﻿import { CompanySettings, Plot, PlotInquiry, Seller } from '../types';
+import { CompanySettings, Plot, PlotInquiry, Seller } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8080/api');
 
 export const apiService = {
   // SETTINGS
@@ -38,6 +38,16 @@ export const apiService = {
     return res.json();
   },
 
+  async updatePlot(plotId: string, plotData: Omit<Plot, 'id' | 'createdAt' | 'updatedAt'>): Promise<Plot> {
+    const res = await fetch(`${API_BASE}/plots/${plotId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(plotData)
+    });
+    if (!res.ok) throw new Error('Failed to update plot');
+    return res.json();
+  },
+
   async verifyPlot(plotId: string): Promise<Plot> {
     const res = await fetch(`${API_BASE}/plots/${plotId}/verify`, { method: 'PUT' });
     if (!res.ok) throw new Error('Failed to verify plot');
@@ -45,11 +55,10 @@ export const apiService = {
   },
 
   async rejectPlot(plotId: string, reason: string): Promise<Plot> {
-    const formData = new FormData();
-    formData.append('reason', reason);
     const res = await fetch(`${API_BASE}/plots/${plotId}/reject`, {
       method: 'PUT',
-      body: formData
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
     });
     if (!res.ok) throw new Error('Failed to reject plot');
     return res.json();
@@ -81,6 +90,66 @@ export const apiService = {
     const res = await fetch(`${API_BASE}/sellers/${sellerId}/toggle`, { method: 'PUT' });
     if (!res.ok) throw new Error('Failed to toggle seller status');
     return res.json();
+  },
+
+  async updateSeller(sellerId: string, sellerData: Partial<Seller>): Promise<Seller> {
+    const res = await fetch(`${API_BASE}/sellers/${sellerId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sellerData)
+    });
+    if (!res.ok) throw new Error('Failed to update seller');
+    return res.json();
+  },
+
+  async deleteSeller(sellerId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/sellers/${sellerId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete seller');
+  },
+
+  // SELLER OTP AUTH
+  async sendSellerOtp(email: string): Promise<{ success: boolean; message: string; email_delivered?: boolean; code_hint?: string }> {
+    const res = await fetch(`${API_BASE}/auth/seller/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to send OTP code');
+    return data;
+  },
+
+  async verifySellerOtp(email: string, otp: string): Promise<{ success: boolean; seller: Seller }> {
+    const res = await fetch(`${API_BASE}/auth/seller/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Invalid or expired OTP code');
+    return data;
+  },
+
+  async sendSellerSignupOtp(email: string, name?: string): Promise<{ success: boolean; message: string; email_delivered?: boolean; code_hint?: string }> {
+    const res = await fetch(`${API_BASE}/auth/seller/send-signup-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name: name || 'Seller' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to send registration OTP code');
+    return data;
+  },
+
+  async verifySellerSignupOtp(email: string, otp: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/auth/seller/verify-signup-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Invalid or expired OTP code');
+    return data;
   },
 
   // INQUIRIES

@@ -33,8 +33,8 @@ export const ProcedureSection: React.FC<ProcedureSectionProps> = ({
     },
     {
       step: '02',
-      title: '30-Year Encumbrance Certificate & Parent Deed Legal Opinion',
-      description: 'Our senior High Court panel advocates conduct a rigorous 30 to 35-year title chain search at the Sub-Registrar Office (SRO). We certify zero prior mortgages, family disputes, or encumbrances.',
+      title: '3-Year Encumbrance Certificate & Parent Deed Legal Opinion',
+      description: 'Our senior High Court panel advocates conduct a rigorous 3-year title chain search at the Sub-Registrar Office (SRO). We certify zero prior mortgages, family disputes, or encumbrances.',
       badge: 'Certified Clean Title',
       icon: ScrollText,
     },
@@ -92,7 +92,7 @@ export const ProcedureSection: React.FC<ProcedureSectionProps> = ({
             return (
               <div 
                 key={proc.step}
-                className="bg-[#FAFCF9] border border-gray-200 hover:border-black rounded-2xl p-6 transition-all shadow-xs hover:shadow-md flex flex-col justify-between group"
+                className="bg-[#FAFCF9] border-2 border-gray-200 hover:border-slate-900 rounded-2xl p-6 transition-all duration-300 shadow-xs hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between group"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">

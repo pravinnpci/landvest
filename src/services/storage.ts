@@ -5,8 +5,33 @@ const SETTINGS_KEY = 'landvest_company_settings';
 const PLOTS_KEY = 'landvest_plots_data';
 const SELLERS_KEY = 'landvest_sellers_data';
 const INQUIRIES_KEY = 'landvest_inquiries_data';
+const CURRENT_SELLER_KEY = 'landvest_current_seller';
 
 export const storageService = {
+  getCurrentSeller(): Seller | null {
+    try {
+      const stored = localStorage.getItem(CURRENT_SELLER_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Failed to load current seller session', e);
+    }
+    return null;
+  },
+
+  saveCurrentSeller(seller: Seller | null): void {
+    try {
+      if (seller) {
+        localStorage.setItem(CURRENT_SELLER_KEY, JSON.stringify(seller));
+      } else {
+        localStorage.removeItem(CURRENT_SELLER_KEY);
+      }
+    } catch (e) {
+      console.error('Failed to save current seller session', e);
+    }
+  },
+
   getCompanySettings(): CompanySettings {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);

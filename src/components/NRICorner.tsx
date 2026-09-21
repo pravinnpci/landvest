@@ -177,19 +177,25 @@ export const NRICorner: React.FC<NRICornerProps> = ({
               {faqs.map((faq, idx) => (
                 <div 
                   key={idx}
-                  className="border border-gray-200 rounded-xl overflow-hidden transition-colors"
+                  className={`border rounded-xl overflow-hidden transition-all duration-300 ${
+                    openFaq === idx 
+                      ? 'border-emerald-500 shadow-md bg-white' 
+                      : 'border-slate-200 hover:border-emerald-400 hover:shadow-sm bg-slate-50/70 hover:bg-emerald-50/40'
+                  }`}
                 >
                   <button
                     onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    className="w-full text-left p-3.5 bg-gray-50 hover:bg-gray-100 flex items-center justify-between gap-2 text-xs font-bold text-black"
+                    className="w-full text-left p-3.5 sm:p-4 flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-slate-900 group"
                   >
-                    <span>{faq.q}</span>
-                    <span className="text-gray-500 text-sm font-mono">
+                    <span className="group-hover:text-emerald-800 transition-colors">{faq.q}</span>
+                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono transition-transform duration-300 ${
+                      openFaq === idx ? 'bg-emerald-500 text-slate-950 rotate-180' : 'bg-slate-200 text-slate-700 group-hover:bg-emerald-200'
+                    }`}>
                       {openFaq === idx ? '−' : '+'}
                     </span>
                   </button>
                   {openFaq === idx && (
-                    <div className="p-3.5 bg-white text-xs text-gray-600 leading-relaxed border-t border-gray-100">
+                    <div className="p-3.5 sm:p-4 bg-white text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-emerald-100 animate-in fade-in">
                       {faq.a}
                     </div>
                   )}

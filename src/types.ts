@@ -30,6 +30,7 @@ export interface Plot {
   sellerId: string;
   sellerName: string;
   sellerPhone: string;
+  sellerEmail?: string;
   status: 'pending_verification' | 'verified_broadcasted' | 'rejected' | 'sold';
   adminNotes?: string;
   expectedAppreciationRate: number; // e.g. 12%, 15%, 18%
@@ -46,6 +47,8 @@ export interface Seller {
   phone: string;
   email: string;
   companyName?: string;
+  incomeTaxPan?: string;
+  country?: string;
   district: string;
   state: string;
   status: 'active' | 'pending' | 'suspended';
@@ -64,6 +67,11 @@ export interface CompanySettings {
   dtcpAssuranceBadgeText: string;
   defaultAnnualGrowthRate: number;
   usdtToInrRate: number;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPassword?: string;
+  smtpFromEmail?: string;
 }
 
 export interface PlotInquiry {

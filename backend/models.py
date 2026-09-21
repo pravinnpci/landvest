@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Column, String, Integer, Float, Boolean, Text, JSON, DateTime
+from sqlalchemy import Column, String, Integer, Float, Boolean, Text, JSON, DateTime
 from datetime import datetime
 from database import Base
 
@@ -26,6 +26,7 @@ class PlotModel(Base):
     sellerId = Column(String(50), nullable=False, index=True)
     sellerName = Column(String(150), nullable=False)
     sellerPhone = Column(String(50), nullable=False)
+    sellerEmail = Column(String(150), nullable=True)
     status = Column(String(50), default="verified_broadcasted", index=True)
     adminNotes = Column(Text, nullable=True)
     expectedAppreciationRate = Column(Float, default=15.0)
@@ -43,6 +44,8 @@ class SellerModel(Base):
     phone = Column(String(50), nullable=False, index=True)
     email = Column(String(150), nullable=False)
     companyName = Column(String(150), nullable=True)
+    incomeTaxPan = Column(String(100), nullable=True)
+    country = Column(String(100), default="India")
     district = Column(String(100), nullable=False)
     state = Column(String(100), default="Tamil Nadu")
     status = Column(String(50), default="active")
@@ -79,3 +82,9 @@ class CompanySettingsModel(Base):
     dtcpAssuranceBadgeText = Column(String(255), default="100% DTCP & RERA Compliant • 30-Year Clear Title Guarantee")
     defaultAnnualGrowthRate = Column(Float, default=15.0)
     usdtToInrRate = Column(Float, default=86.5)
+    smtpHost = Column(String(150), nullable=True)
+    smtpPort = Column(Integer, default=587)
+    smtpUser = Column(String(150), nullable=True)
+    smtpPassword = Column(String(150), nullable=True)
+    smtpFromEmail = Column(String(150), nullable=True)
+

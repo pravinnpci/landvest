@@ -59,7 +59,20 @@ export const YearlyPredictions: React.FC<YearlyPredictionsProps> = ({
     };
   });
 
-  const targetYearData = yearlyBreakdown[horizonYears - 1];
+  const targetLandValue = Math.round(baseInvestment * Math.pow(1 + growthRate / 100, horizonYears));
+  const targetGain = targetLandValue - baseInvestment;
+  const targetRoiPercentage = ((targetGain / baseInvestment) * 100).toFixed(0);
+  const targetFlatValue = Math.round(baseInvestment * Math.pow(1 + 0.05, horizonYears));
+  const targetFdValue = Math.round(baseInvestment * Math.pow(1 + 0.07, horizonYears));
+
+  const targetYearData = {
+    year: horizonYears,
+    landValue: targetLandValue,
+    flatValue: targetFlatValue,
+    fdValue: targetFdValue,
+    gain: targetGain,
+    roiPercentage: targetRoiPercentage,
+  };
 
   return (
     <div id="predictions" className="py-12 bg-[#FAFCF9]">
@@ -189,8 +202,8 @@ export const YearlyPredictions: React.FC<YearlyPredictionsProps> = ({
               />
             </div>
 
-            {/* Holding Horizon Slider */}
-            <div className="space-y-2">
+            {/* Holding Horizon Buttons & Slider */}
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                   Holding Horizon: <span className="text-black text-sm font-black">{horizonYears} Years</span>
@@ -199,11 +212,30 @@ export const YearlyPredictions: React.FC<YearlyPredictionsProps> = ({
                   Year {horizonYears} Valuation
                 </span>
               </div>
+
+              {/* Quick Period Buttons: 1.5, 3, 4, 5, 7, 10 Yrs */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                {[1.5, 3, 4, 5, 7, 10].map((yrs) => (
+                  <button
+                    key={yrs}
+                    type="button"
+                    onClick={() => setHorizonYears(yrs)}
+                    className={`py-2 px-1 text-center rounded-xl font-extrabold text-xs transition-all border ${
+                      horizonYears === yrs
+                        ? 'bg-black text-white border-black shadow-sm'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {yrs} Yrs
+                  </button>
+                ))}
+              </div>
+
               <input
                 type="range"
                 min="1"
                 max="10"
-                step="1"
+                step="0.5"
                 value={horizonYears}
                 onChange={(e) => setHorizonYears(Number(e.target.value))}
                 className="w-full accent-black cursor-pointer"

@@ -46,6 +46,8 @@ services:
       PUBLIC_MINIO_URL: http://localhost:9080
     ports:
       - "8080:8000"
+    volumes:
+      - ./backend/uploads:/app/uploads
     depends_on:
       landvest-db:
         condition: service_healthy

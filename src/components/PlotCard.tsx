@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   MapPin, 
@@ -7,13 +7,33 @@ import {
   User, 
   ArrowUpRight, 
   Compass, 
-  TrendingUp,
-  Image as ImageIcon,
-  CheckCircle2,
-  Lock
+  TrendingUp, 
+  Image as ImageIcon, 
+  CheckCircle2, 
+  Lock 
 } from 'lucide-react';
 import { CurrencyCode, Plot } from '../types';
 import { formatCurrency, formatRatePerSqFt } from '../utils/currency';
+
+const FALLBACK_PLOT_IMAGES = [
+  'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1628624747186-a941c476b7ef?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1524813686514-a57563d77d61?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1200&q=80',
+];
+
+export function getPlotFallbackImage(idOrTitle: string = ''): string {
+  let hash = 0;
+  for (let i = 0; i < idOrTitle.length; i++) {
+    hash = (hash << 5) - hash + idOrTitle.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % FALLBACK_PLOT_IMAGES.length;
+  return FALLBACK_PLOT_IMAGES[index];
+}
 
 interface PlotCardProps {
   plot: Plot;
@@ -31,24 +51,55 @@ export const PlotCard: React.FC<PlotCardProps> = ({
   onInquire,
 }) => {
   const isVerified = plot.status === 'verified_broadcasted';
-  const mainImage = plot.plotImages[0] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80';
+  
+  const initialImg = (plot.plotImages && plot.plotImages.length > 0 && plot.plotImages[0].trim())
+    ? plot.plotImages[0]
+    : getPlotFallbackImage(plot.id || plot.title);
+
+  const [currentImg, setCurrentImg] = useState<string>(initialImg);
+
+  useEffect(() => {
+    setCurrentImg(
+      plot.plotImages && plot.plotImages.length > 0 && plot.plotImages[0].trim()
+        ? plot.plotImages[0]
+        : getPlotFallbackImage(plot.id || plot.title)
+    );
+  }, [plot.plotImages, plot.id, plot.title]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group">
-      {/* Image and Badges Header */}
-      <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+    <div className="bg-white border-2 border-gray-200 hover:border-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col group">
+      {/* Image and Badges Header - Clickable to open full detail popup */}
+      <div 
+        onClick={() => onViewDetails(plot)}
+        className="relative aspect-[16/10] overflow-hidden bg-slate-900 cursor-pointer group/img select-none"
+        title="Click on image to view full details and layout plan"
+      >
         <img
-          src={mainImage}
+          src={currentImg}
           alt={plot.title}
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={() => {
+            const fallback = getPlotFallbackImage(plot.id || plot.title);
+            if (currentImg !== fallback) {
+              setCurrentImg(fallback);
+            }
+          }}
+          className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500"
         />
 
+        {/* Hover click hint */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10">
+          <span className="bg-white/95 backdrop-blur-md text-black px-3.5 py-1.5 rounded-full text-xs font-black shadow-lg flex items-center gap-1.5 transform translate-y-1 group-hover/img:translate-y-0 transition-transform">
+            <Maximize2 className="w-3.5 h-3.5 text-[#4FAF00]" />
+            <span>Click to View Plot Details</span>
+          </span>
+        </div>
+
         {/* Gradient Overlay for badges legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none z-0" />
 
         {/* Top Badges */}
-        <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+        <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-20">
           <div className="flex flex-col gap-1.5">
             {plot.isDtcpApproved && (
               <span className="inline-flex items-center gap-1 bg-[#68D800] text-black font-extrabold text-[11px] px-2.5 py-1 rounded-md shadow-sm">

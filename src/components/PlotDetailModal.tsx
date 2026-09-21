@@ -172,9 +172,12 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
             <div className="space-y-4">
               <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
                 <img
-                  src={plot.plotImages[0]}
+                  src={plot.plotImages[0] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80'}
                   alt={plot.title}
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80';
+                  }}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -182,7 +185,15 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
                 <div className="grid grid-cols-3 gap-3">
                   {plot.plotImages.slice(1).map((img, idx) => (
                     <div key={idx} className="aspect-[16/10] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                      <img src={img} alt={`Plot detail ${idx + 2}`} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                      <img 
+                        src={img} 
+                        alt={`Plot detail ${idx + 2}`} 
+                        referrerPolicy="no-referrer" 
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=800&q=80';
+                        }}
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
                   ))}
                 </div>
@@ -198,9 +209,12 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
               </div>
               <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden bg-gray-900 border border-gray-200 flex items-center justify-center relative">
                 <img
-                  src={plot.layoutPlanImage}
+                  src={plot.layoutPlanImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'}
                   alt="Plat Layout Blueprint"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80';
+                  }}
                   className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
                 />
                 <div className="absolute bottom-3 right-3 bg-black/80 text-white text-[11px] px-3 py-1 rounded-lg backdrop-blur-xs font-semibold">
@@ -218,9 +232,12 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
               </div>
               <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden bg-gray-900 border border-gray-200 relative">
                 <img
-                  src={plot.locationImage}
-                  alt="Location Snap"
+                  src={plot.locationImage || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80'}
+                  alt="Satellite Location Map"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80';
+                  }}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-3 left-3 bg-black/80 text-white text-xs px-3 py-1.5 rounded-lg backdrop-blur-xs font-bold flex items-center gap-1.5">

@@ -7,7 +7,9 @@ import {
   ShieldCheck, 
   SlidersHorizontal,
   ArrowUpDown,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { CurrencyCode, Plot } from '../types';
 import { PlotCard } from './PlotCard';
@@ -35,6 +37,13 @@ export const PlotsCatalog: React.FC<PlotsCatalogProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'recommended' | 'price_low' | 'price_high' | 'yield_high'>('recommended');
   const [maxBudget, setMaxBudget] = useState<number>(10000000); // 1 Crore default
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(6);
+
+  // Reset to page 1 whenever filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedDistrict, sortBy, maxBudget, itemsPerPage]);
 
   // We filter broadcasted plots for the public view
   const broadcastedPlots = plots.filter((p) => p.status === 'verified_broadcasted');
@@ -61,6 +70,20 @@ export const PlotsCatalog: React.FC<PlotsCatalogProps> = ({
       if (sortBy === 'yield_high') return b.expectedAppreciationRate - a.expectedAppreciationRate;
       return 0; // recommended order
     });
+
+  const totalPlots = filteredPlots.length;
+  const totalPages = Math.ceil(totalPlots / itemsPerPage) || 1;
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const paginatedPlots = filteredPlots.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    const el = document.getElementById('plots');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const uniqueDistricts = Array.from(new Set(broadcastedPlots.map((p) => p.district)));
 
@@ -189,18 +212,99 @@ export const PlotsCatalog: React.FC<PlotsCatalogProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {filteredPlots.map((plot) => (
-              <PlotCard
-                key={plot.id}
-                plot={plot}
-                activeCurrency={activeCurrency}
-                onViewDetails={onViewDetails}
-                onCalculateYield={onCalculateYield}
-                onInquire={onInquire}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {paginatedPlots.map((plot) => (
+                <PlotCard
+                  key={plot.id}
+                  plot={plot}
+                  activeCurrency={activeCurrency}
+                  onViewDetails={onViewDetails}
+                  onCalculateYield={onCalculateYield}
+                  onInquire={onInquire}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                {/* Result counter and items per page */}
+                <div className="flex items-center gap-4 text-xs font-semibold text-gray-500 order-2 sm:order-1">
+                  <span>
+                    Showing <strong className="text-black">{startIndex + 1}</strong> to{' '}
+                    <strong className="text-black">
+                      {Math.min(startIndex + itemsPerPage, totalPlots)}
+                    </strong>{' '}
+                    of <strong className="text-black">{totalPlots}</strong> verified plots
+                  </span>
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <span className="text-gray-400">Per page:</span>
+                    {[6, 12, 24].map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setItemsPerPage(size)}
+                        className={`px-2 py-0.5 rounded text-xs font-bold transition-all ${
+                          itemsPerPage === size
+                            ? 'bg-black text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Page Navigation Buttons */}
+                <div className="flex items-center gap-1.5 order-1 sm:order-2">
+                  <button
+                    onClick={() => handlePageChange(safeCurrentPage - 1)}
+                    disabled={safeCurrentPage <= 1}
+                    className={`inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                      safeCurrentPage <= 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 shadow-xs active:scale-95'
+                    }`}
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Prev</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`min-w-[36px] h-9 rounded-xl text-xs font-black transition-all ${
+                          safeCurrentPage === pageNum
+                            ? 'bg-[#68D800] text-black shadow-sm ring-2 ring-[#68D800]/50'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(safeCurrentPage + 1)}
+                    disabled={safeCurrentPage >= totalPages}
+                    className={`inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                      safeCurrentPage >= totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 shadow-xs active:scale-95'
+                    }`}
+                    aria-label="Next Page"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
