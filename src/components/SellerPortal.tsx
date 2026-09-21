@@ -151,15 +151,31 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(target);
+
+    // Instant local preview via FileReader (works 100% on GitHub Pages & offline)
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        if (target === 'plot') setPlotImageUrl(dataUrl);
+        if (target === 'layout') setLayoutPlanUrl(dataUrl);
+        if (target === 'location') setLocationImageUrl(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+
     try {
       const uploadedUrl = await apiService.uploadFile(file);
-      if (target === 'plot') setPlotImageUrl(uploadedUrl);
-      if (target === 'layout') setLayoutPlanUrl(uploadedUrl);
-      if (target === 'location') setLocationImageUrl(uploadedUrl);
+      if (uploadedUrl) {
+        if (target === 'plot') setPlotImageUrl(uploadedUrl);
+        if (target === 'layout') setLayoutPlanUrl(uploadedUrl);
+        if (target === 'location') setLocationImageUrl(uploadedUrl);
+      }
     } catch (err) {
-      console.warn('File upload fallback:', err);
+      console.warn('Backend upload fallback (using local image):', err);
     } finally {
       setIsUploading(null);
+      e.target.value = ''; // Reset input to allow re-uploading same file
     }
   };
 
@@ -1323,7 +1339,15 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                           className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-black focus:outline-none"
                         />
                         <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-gray-100 border">
-                          <img src={plotImageUrl} alt="Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                          <img
+                            src={plotImageUrl}
+                            alt="Preview"
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80';
+                            }}
+                          />
                         </div>
                       </div>
 
@@ -1344,7 +1368,15 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                           className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-black focus:outline-none"
                         />
                         <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-gray-100 border">
-                          <img src={layoutPlanUrl} alt="Layout Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                          <img
+                            src={layoutPlanUrl}
+                            alt="Layout Preview"
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80';
+                            }}
+                          />
                         </div>
                       </div>
 
@@ -1365,7 +1397,15 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                           className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-black focus:outline-none"
                         />
                         <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-gray-100 border">
-                          <img src={locationImageUrl} alt="Location Preview" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                          <img
+                            src={locationImageUrl}
+                            alt="Location Preview"
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80';
+                            }}
+                          />
                         </div>
                       </div>
                     </div>

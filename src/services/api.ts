@@ -1,6 +1,12 @@
 import { CompanySettings, Plot, PlotInquiry, Seller } from '../types';
 
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8080/api');
+const getApiBase = () => {
+  if (typeof window !== 'undefined' && window.location.hostname.includes('github.io')) {
+    return 'https://landvest-sapravin46-1821s-projects.vercel.app/api';
+  }
+  return import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8080/api');
+};
+const API_BASE = getApiBase();
 
 export const apiService = {
   // SETTINGS
@@ -169,16 +175,28 @@ export const apiService = {
     return res.json();
   },
 
-  // S3 FILE UPLOAD
+  // ROBUST FILE UPLOAD WITH CLIENT DATA-URL FALLBACK
   async uploadFile(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(`${API_BASE}/upload`, {
-      method: 'POST',
-      body: formData
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) return data.url;
+      }
+    } catch (e) {
+      console.warn('Server upload endpoint not reachable, using local Data URL fallback:', e);
+    }
+    // Universal client-side Data URL fallback (works 100% on GitHub Pages, offline, or cloud)
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.readAsDataURL(file);
     });
-    if (!res.ok) throw new Error('Failed to upload file');
-    const data = await res.json();
-    return data.url;
   }
 };
