@@ -1,14 +1,14 @@
 import { CompanySettings, Plot, Seller } from '../types';
 
 export const INITIAL_COMPANY_SETTINGS: CompanySettings = {
-  companyName: 'Apex Green Real Estate & Land Investments',
+  companyName: 'LandVest - NRI & Global Land Investments',
   tagline: 'High-Yield DTCP Approved Land Investments with End-to-End Legal Assurance',
   primaryPhone: '+91 98401 23456',
   secondaryPhone: '+91 94440 98765',
   whatsappNumber: '+91 98401 23456',
-  email: 'invest@apexgreenland.com',
-  nriDeskEmail: 'nri.desk@apexgreenland.com',
-  officeAddress: 'Apex Towers, 4th Floor, Anna Salai, Guindy, Chennai, Tamil Nadu - 600032',
+  email: 'invest@landvest.in',
+  nriDeskEmail: 'nri.desk@landvest.in',
+  officeAddress: 'LandVest Tower, 4th Floor, Anna Salai, Guindy, Chennai, Tamil Nadu - 600032',
   dtcpAssuranceBadgeText: '100% DTCP & RERA Compliant • 30-Year Clear Title Guarantee',
   defaultAnnualGrowthRate: 15,
   usdtToInrRate: 86.5,
@@ -47,6 +47,17 @@ export const INITIAL_SELLERS: Seller[] = [
     state: 'Tamil Nadu',
     status: 'active',
     createdDate: '2025-03-01',
+  },
+  {
+    id: 'seller-praveen',
+    name: 'Praveen AU',
+    phone: '+91 98401 99999',
+    email: 'praveenau26@gmail.com',
+    companyName: 'Prime DTCP Lands',
+    district: 'Chennai',
+    state: 'Tamil Nadu',
+    status: 'active',
+    createdDate: '2025-01-25',
   },
 ];
 

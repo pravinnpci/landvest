@@ -36,7 +36,10 @@ export const storageService = {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.companyName && !parsed.companyName.includes('Apex')) {
+          return parsed;
+        }
       }
     } catch (e) {
       console.error('Failed to load settings', e);

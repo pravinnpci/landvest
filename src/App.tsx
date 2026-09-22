@@ -23,13 +23,24 @@ export default function App() {
   const [sellers, setSellers] = useState<Seller[]>(() => storageService.getSellers());
   const [inquiries, setInquiries] = useState<PlotInquiry[]>(() => storageService.getInquiries());
 
-  // Navigation & View States - Direct URLs for /admin and /seller
-  const isDirectAdminUrl = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
-  const isDirectSellerUrl = typeof window !== 'undefined' && window.location.pathname.startsWith('/seller');
+  // Navigation & View States - Base-aware & GitHub Pages compatible (supporting Path, Hash #seller/#admin, and Query ?view=seller)
+  const getViewFromLocation = (): 'public' | 'seller' | 'admin' => {
+    if (typeof window === 'undefined') return 'public';
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    const search = window.location.search.toLowerCase();
+
+    if (path.endsWith('/admin') || hash.includes('admin') || search.includes('admin')) {
+      return 'admin';
+    }
+    if (path.endsWith('/seller') || hash.includes('seller') || search.includes('seller')) {
+      return 'seller';
+    }
+    return 'public';
+  };
+
   const [activeTab, setActiveTab] = useState<string>('plots');
-  const [viewMode, setViewMode] = useState<'public' | 'seller' | 'admin'>(
-    isDirectAdminUrl ? 'admin' : isDirectSellerUrl ? 'seller' : 'public'
-  );
+  const [viewMode, setViewMode] = useState<'public' | 'seller' | 'admin'>(() => getViewFromLocation());
   const [activeCurrency, setActiveCurrency] = useState<CurrencyCode>('USD');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
 
@@ -38,23 +49,40 @@ export default function App() {
 
   // Authentication States
   const [currentSeller, setCurrentSeller] = useState<Seller | null>(() => storageService.getCurrentSeller());
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(isDirectAdminUrl);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => getViewFromLocation() === 'admin');
 
-  // Listen to browser popstate / url changes
-  useEffect(() => {
-    const handlePopState = () => {
-      const path = window.location.pathname;
-      if (path.startsWith('/admin')) {
-        setViewMode('admin');
-        setIsAdminLoggedIn(true);
-      } else if (path.startsWith('/seller')) {
-        setViewMode('seller');
+  // Universal Navigation URL updater (works seamlessly on GitHub Pages /landvest/ without 404)
+  const navigateToView = (mode: 'public' | 'seller' | 'admin') => {
+    setViewMode(mode);
+    if (typeof window !== 'undefined') {
+      const isGitHubPages = window.location.hostname.includes('github.io');
+      const basePath = isGitHubPages ? '/landvest/' : '/';
+
+      if (mode === 'public') {
+        window.history.pushState({}, '', isGitHubPages ? basePath : '/');
       } else {
-        setViewMode('public');
+        // Use hash on GitHub Pages so page reloads NEVER 404
+        const targetUrl = isGitHubPages ? `${basePath}#${mode}` : `/${mode}`;
+        window.history.pushState({}, '', targetUrl);
+      }
+    }
+  };
+
+  // Listen to browser popstate and hashchange
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const mode = getViewFromLocation();
+      setViewMode(mode);
+      if (mode === 'admin') {
+        setIsAdminLoggedIn(true);
       }
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
   }, []);
 
   // Synchronize document title with dynamic company name
@@ -445,16 +473,14 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={(tab) => {
           setActiveTab(tab);
-          setViewMode('public');
-          window.history.pushState({}, '', '/');
+          navigateToView('public');
           const element = document.getElementById(tab);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
           }
         }}
         onOpenSellerPortal={() => {
-          setViewMode('seller');
-          window.history.pushState({}, '', '/seller');
+          navigateToView('seller');
         }}
         isSellerLoggedIn={!!currentSeller}
         currentSeller={currentSeller}
@@ -485,8 +511,7 @@ export default function App() {
             onEditPlot={handleEditPlot}
             onRegisterSeller={handleAddSeller}
             onClose={() => {
-              setViewMode('public');
-              window.history.pushState({}, '', '/');
+              navigateToView('public');
             }}
           />
         ) : viewMode === 'admin' ? (
@@ -500,8 +525,7 @@ export default function App() {
             onLoginAdmin={() => setIsAdminLoggedIn(true)}
             onLogoutAdmin={() => {
               setIsAdminLoggedIn(false);
-              setViewMode('public');
-              window.history.pushState({}, '', '/');
+              navigateToView('public');
             }}
             onUpdateSettings={handleUpdateSettings}
             onVerifyAndBroadcastPlot={handleVerifyAndBroadcastPlot}
@@ -513,8 +537,7 @@ export default function App() {
             onDeleteSeller={handleDeleteSeller}
             onToggleSellerStatus={handleToggleSellerStatus}
             onClose={() => {
-              setViewMode('public');
-              window.history.pushState({}, '', '/');
+              navigateToView('public');
             }}
           />
         ) : (
@@ -636,14 +659,12 @@ export default function App() {
         settings={settings} 
         onTabChange={(tab) => {
           setActiveTab(tab);
-          setViewMode('public');
-          window.history.pushState({}, '', '/');
+          navigateToView('public');
           const element = document.getElementById(tab);
           if (element) element.scrollIntoView({ behavior: 'smooth' });
         }} 
         onOpenSellerPortal={() => {
-          setViewMode('seller');
-          window.history.pushState({}, '', '/seller');
+          navigateToView('seller');
         }}
       />
     </div>
