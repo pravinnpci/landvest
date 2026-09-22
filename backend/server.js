@@ -18,11 +18,12 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 1. SUPABASE POSTGRES CONNECTION POOL
-const dbUrl = process.env.DATABASE_URL || 
-  'postgresql://postgres.iloyapuzfyidxlezixfv:Land%40vest123@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require';
+const rawDbUrl = process.env.DATABASE_URL || 
+  'postgresql://postgres.iloyapuzfyidxlezixfv:Land%40vest123@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres';
+const cleanDbUrl = rawDbUrl.replace(/[?&]sslmode=[^&]+/g, '');
 
 const pool = new Pool({
-  connectionString: dbUrl,
+  connectionString: cleanDbUrl,
   ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30000,
@@ -527,9 +528,10 @@ router.post(['/upload', '/api/upload'], upload.single('file'), (req, res) => {
 // MOUNT ROUTER
 app.use(router);
 
-// Standalone Server Start (for local testing)
-const PORT = process.env.PORT || 3001;
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+// Standalone Server Start (only when run directly, not imported in serverless)
+import { fileURLToPath } from 'url';
+if (process.argv[1] && process.argv[1] === fileURLToPath(import.meta.url)) {
+  const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
     console.log(`LandVest Serverless Express API running on port ${PORT}`);
   });
