@@ -640,7 +640,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                         required
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="e.g. Apex Green Real Estate & Land Investments"
+                        placeholder="e.g. LandVest - NRI & Global Land Investments"
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm font-extrabold text-black focus:ring-2 focus:ring-[#68D800] focus:outline-none"
                       />
                     </div>

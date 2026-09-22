@@ -65,6 +65,7 @@ export default function App() {
         const targetUrl = isGitHubPages ? `${basePath}#${mode}` : `/${mode}`;
         window.history.pushState({}, '', targetUrl);
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -665,6 +666,9 @@ export default function App() {
         }} 
         onOpenSellerPortal={() => {
           navigateToView('seller');
+        }}
+        onOpenAdminPortal={() => {
+          navigateToView('admin');
         }}
       />
     </div>

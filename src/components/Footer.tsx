@@ -16,12 +16,14 @@ interface FooterProps {
   settings: CompanySettings;
   onTabChange: (tab: string) => void;
   onOpenSellerPortal: () => void;
+  onOpenAdminPortal?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   settings,
   onTabChange,
   onOpenSellerPortal,
+  onOpenAdminPortal,
 }) => {
   return (
     <footer className="bg-[#111827] text-white border-t border-gray-800 w-full overflow-hidden">
@@ -128,6 +130,13 @@ export const Footer: React.FC<FooterProps> = ({
                   Contact Us
                 </button>
               </li>
+              {onOpenAdminPortal && (
+                <li className="pt-2 border-t border-gray-800/80">
+                  <button onClick={onOpenAdminPortal} className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors flex items-center gap-1">
+                    <span>Admin Portal</span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 
