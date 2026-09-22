@@ -120,7 +120,12 @@ export const apiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
-    const data = await res.json();
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      data = { detail: res.statusText || 'Unable to reach verification service' };
+    }
     if (!res.ok) throw new Error(data.detail || 'Failed to send OTP code');
     return data;
   },
@@ -131,7 +136,12 @@ export const apiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp })
     });
-    const data = await res.json();
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      data = { detail: res.statusText || 'Invalid response from server' };
+    }
     if (!res.ok) throw new Error(data.detail || 'Invalid or expired OTP code');
     return data;
   },
@@ -142,7 +152,12 @@ export const apiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, name: name || 'Seller' })
     });
-    const data = await res.json();
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      data = { detail: res.statusText || 'Unable to reach registration service' };
+    }
     if (!res.ok) throw new Error(data.detail || 'Failed to send registration OTP code');
     return data;
   },
@@ -153,7 +168,12 @@ export const apiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp })
     });
-    const data = await res.json();
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      data = { detail: res.statusText || 'Invalid response from server' };
+    }
     if (!res.ok) throw new Error(data.detail || 'Invalid or expired OTP code');
     return data;
   },

@@ -260,9 +260,10 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
         setOtpNotice(`6-digit OTP code sent to ${matched.email}. (Dev Code: ${code})`);
         setOtpStep('verify');
       } else {
-        setAuthError(
-          err.message || 'This email is not registered as a seller. Please switch to the "Become a Seller" tab to register your account.'
-        );
+        const errorMsg = (err.message && err.message !== 'Failed to fetch') 
+          ? err.message 
+          : 'This email is not registered as a seller. Please switch to the "Become a Seller" tab to register your account.';
+        setAuthError(errorMsg);
       }
     } finally {
       setIsSendingOtp(false);

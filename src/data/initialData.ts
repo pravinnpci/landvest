@@ -59,6 +59,17 @@ export const INITIAL_SELLERS: Seller[] = [
     status: 'active',
     createdDate: '2025-01-25',
   },
+  {
+    id: 'seller-siva',
+    name: 'Siva Bharathi',
+    phone: '+91 98401 55555',
+    email: 'msivabarathi@gmail.com',
+    companyName: 'Siva DTCP Lands',
+    district: 'Chennai',
+    state: 'Tamil Nadu',
+    status: 'active',
+    createdDate: '2025-01-25',
+  },
 ];
 
 export const INITIAL_PLOTS: Plot[] = [
