@@ -59,18 +59,22 @@ jobs:
   deploy-vercel:
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    continue-on-error: true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
+        continue-on-error: true
+        if: env.VERCEL_TOKEN != ''
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           vercel-args: '--prod'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
       - name: Print Deployment Status
         run: |
