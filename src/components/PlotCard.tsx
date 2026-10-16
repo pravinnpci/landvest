@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { CurrencyCode, Plot } from '../types';
 import { formatCurrency, formatRatePerSqFt } from '../utils/currency';
+import { getProjectInventoryStatus } from '../utils/plotStatus';
 
 const FALLBACK_PLOT_IMAGES = [
   'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
@@ -51,6 +52,7 @@ export const PlotCard: React.FC<PlotCardProps> = ({
   onInquire,
 }) => {
   const isVerified = plot.status === 'verified_broadcasted';
+  const inventoryStatus = getProjectInventoryStatus(plot);
   
   const initialImg = (plot.plotImages && plot.plotImages.length > 0 && plot.plotImages[0].trim())
     ? plot.plotImages[0]
@@ -113,24 +115,26 @@ export const PlotCard: React.FC<PlotCardProps> = ({
           </div>
 
           {/* Broadcast / Availability Status Badge */}
-          {plot.status === 'booked' ? (
+          {plot.status === 'pending_verification' ? (
+            <span className="inline-flex items-center gap-1 bg-amber-500 text-black font-bold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
+              <Lock className="w-3 h-3 text-black" />
+              PENDING VERIFICATION
+            </span>
+          ) : inventoryStatus.isAllSold ? (
+            <span className="inline-flex items-center gap-1 bg-rose-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
+              SOLD OUT
+            </span>
+          ) : inventoryStatus.isAllBooked ? (
             <span className="inline-flex items-center gap-1 bg-amber-400 text-black font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
               BOOKED
             </span>
-          ) : plot.status === 'sold' ? (
-            <span className="inline-flex items-center gap-1 bg-rose-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
-              SOLD
-            </span>
-          ) : isVerified ? (
+          ) : (
             <span className="inline-flex items-center gap-1 bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
               <CheckCircle2 className="w-3 h-3 text-white" />
-              AVAILABLE
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 bg-amber-500 text-black font-bold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
-              <Lock className="w-3 h-3 text-black" />
-              PENDING VERIFICATION
+              {plot.subPlots && plot.subPlots.length > 0
+                ? `AVAILABLE (${inventoryStatus.availableCount}/${inventoryStatus.totalCount} PLOTS)`
+                : 'AVAILABLE'}
             </span>
           )}
         </div>

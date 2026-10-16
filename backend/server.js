@@ -34,6 +34,15 @@ pool.on('error', (err) => {
   console.error('Unexpected error on idle DB client:', err.message);
 });
 
+// Run idempotent schema migrations
+pool.query(`
+  ALTER TABLE plots ADD COLUMN IF NOT EXISTS "subPlots" JSON;
+  ALTER TABLE plots ADD COLUMN IF NOT EXISTS "layoutHtml" TEXT;
+  ALTER TABLE plots ADD COLUMN IF NOT EXISTS "plotImageHtml" TEXT;
+  ALTER TABLE plots ADD COLUMN IF NOT EXISTS "locationImageHtml" TEXT;
+  ALTER TABLE plots ADD COLUMN IF NOT EXISTS "sellerBroadcastStatus" VARCHAR(50);
+`).catch((err) => console.log('DB Schema check note:', err.message));
+
 // In-Memory OTP Store
 const OTP_STORE = {};
 
@@ -185,6 +194,27 @@ router.post(['/plots', '/api/plots'], async (req, res) => {
       today
     ];
 
+    if (plotData.subPlots) {
+      keys.push('subPlots');
+      values.push(typeof plotData.subPlots === 'string' ? plotData.subPlots : JSON.stringify(plotData.subPlots));
+    }
+    if (plotData.layoutHtml) {
+      keys.push('layoutHtml');
+      values.push(plotData.layoutHtml);
+    }
+    if (plotData.plotImageHtml) {
+      keys.push('plotImageHtml');
+      values.push(plotData.plotImageHtml);
+    }
+    if (plotData.locationImageHtml) {
+      keys.push('locationImageHtml');
+      values.push(plotData.locationImageHtml);
+    }
+    if (plotData.sellerBroadcastStatus) {
+      keys.push('sellerBroadcastStatus');
+      values.push(plotData.sellerBroadcastStatus);
+    }
+
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
     const colNames = keys.map(k => `"${k}"`).join(', ');
 
@@ -207,7 +237,7 @@ router.put(['/plots/:id', '/api/plots/:id'], async (req, res) => {
     const values = [];
     const setClauses = fields.map((f, i) => {
       let val = updates[f];
-      if ((f === 'plotImages' || f === 'highlights') && typeof val !== 'string') {
+      if ((f === 'plotImages' || f === 'highlights' || f === 'subPlots') && typeof val !== 'string') {
         val = JSON.stringify(val);
       }
       values.push(val);

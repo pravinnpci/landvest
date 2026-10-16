@@ -36,6 +36,7 @@ async def lifespan(app: FastAPI):
                     conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "layoutHtml" TEXT;'))
                     conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "plotImageHtml" TEXT;'))
                     conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "locationImageHtml" TEXT;'))
+                    conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "sellerBroadcastStatus" VARCHAR(50);'))
                     # Automatically restore plots that were accidentally suspended if their seller is currently active
                     conn.execute(text('''
                         UPDATE plots 
@@ -110,9 +111,11 @@ class PlotCreateSchema(BaseModel):
     facing: str = "East"
     roadWidthFt: int = 30
     highlights: List[str] = []
+    sellerBroadcastStatus: Optional[str] = "broadcasted"
 
 class PlotUpdateSchema(BaseModel):
     status: Optional[str] = None
+    sellerBroadcastStatus: Optional[str] = None
     adminNotes: Optional[str] = None
     title: Optional[str] = None
     state: Optional[str] = "Tamil Nadu"
@@ -324,12 +327,12 @@ def update_plot(plot_id: str, plot_update: PlotUpdateSchema, db: Session = Depen
         if value is not None:
             setattr(plot, key, value)
     
-    # If status wasn't explicitly provided, preserve broadcasted or booked status
+    # If status wasn't explicitly provided, preserve broadcasted, booked or sold status
     if "status" not in update_data or update_data["status"] is None:
-        if plot.status not in ["verified_broadcasted", "booked"]:
+        if plot.status not in ["verified_broadcasted", "booked", "sold"]:
             plot.status = "pending_verification"
     if "adminNotes" not in update_data or update_data["adminNotes"] is None:
-        if plot.status not in ["verified_broadcasted", "booked"]:
+        if plot.status not in ["verified_broadcasted", "booked", "sold"]:
             plot.adminNotes = "Seller revised plot details. Pending Admin re-audit and broadcast approval."
     db.commit()
     db.refresh(plot)

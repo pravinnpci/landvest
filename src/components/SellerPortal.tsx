@@ -25,7 +25,14 @@ import {
   FileCode,
   Download,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Sparkles,
+  Share2,
+  Send,
+  Check,
+  Copy,
+  ExternalLink,
+  Radio
 } from 'lucide-react';
 import { Plot, Seller, CurrencyCode, SubPlot } from '../types';
 import { formatCurrency, formatRatePerSqFt, CURRENCIES } from '../utils/currency';
@@ -33,6 +40,7 @@ import { getPlotFallbackImage } from './PlotCard';
 import { apiService } from '../services/api';
 import { InteractivePlotLayout } from './InteractivePlotLayout';
 import { convertImageToHtml, downloadHtmlFile, previewHtmlInNewTab } from '../utils/htmlImageConverter';
+import { getProjectInventoryStatus } from '../utils/plotStatus';
 
 const COUNTRIES = [
   { code: 'IN', name: 'India' },
@@ -161,6 +169,8 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
   const [previewModalHtml, setPreviewModalHtml] = useState<string | null>(null);
   const [previewModalTitle, setPreviewModalTitle] = useState<string>('Document HTML Preview');
   const [statusNotice, setStatusNotice] = useState<string>('');
+  const [shareBroadcastPlot, setShareBroadcastPlot] = useState<Plot | null>(null);
+  const [broadcastCopied, setBroadcastCopied] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'plot' | 'layout' | 'location') => {
     const file = e.target.files?.[0];
@@ -596,6 +606,7 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
   const totalSellerPortfolioINR = sellerPlots.reduce((sum, p) => sum + (p.totalPrice || 0), 0);
   const currencyInfo = CURRENCIES[activeCurrency] || CURRENCIES.INR;
   const todayDateFormatted = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const modalInv = shareBroadcastPlot ? getProjectInventoryStatus(shareBroadcastPlot) : null;
 
   return (
     <div className="py-6 sm:py-10 bg-[#FAFCF9] min-h-[80vh] w-full overflow-x-hidden">
@@ -1704,16 +1715,22 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {sellerPlots.map((plot) => (
+                  {sellerPlots.map((plot) => {
+                    const inv = getProjectInventoryStatus(plot);
+                    return (
                     <div
                       key={plot.id}
                       className="bg-white border border-gray-200 rounded-2xl p-4 shadow-xs space-y-3 flex flex-col justify-between"
                     >
                       <div className="space-y-3">
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
-                          {/* Plot Thumbnail with Details Modal Trigger */}
+                          {/* Plot Thumbnail with Details / Broadcast Trigger */}
                           <div 
-                            onClick={() => onViewPlotDetails && onViewPlotDetails(plot)}
+                            onClick={() => {
+                              if (onViewPlotDetails) {
+                                onViewPlotDetails(plot);
+                              }
+                            }}
                             className="w-full sm:w-24 h-32 sm:h-24 rounded-xl overflow-hidden bg-slate-900 border border-gray-200 shrink-0 cursor-pointer relative group/thumb"
                             title="Click to view full plot details and blueprint"
                           >
@@ -1736,10 +1753,10 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                              {plot.status === 'verified_broadcasted' ? (
-                                <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  LIVE & BROADCASTED
+                              {plot.status === 'pending_verification' ? (
+                                <span className="inline-flex items-center gap-1 bg-amber-500 text-black text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
+                                  <Clock className="w-3 h-3" />
+                                  PENDING ADMIN VERIFICATION
                                 </span>
                               ) : plot.status === 'rejected' ? (
                                 <span className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
@@ -1747,18 +1764,39 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                                   REJECTED (NEEDS REVISION)
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 bg-amber-500 text-black text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs">
-                                  <Clock className="w-3 h-3" />
-                                  PENDING ADMIN BROADCAST
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className={`inline-flex items-center gap-1 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs ${
+                                    inv.isAllSold ? 'bg-rose-600' : inv.isAllBooked ? 'bg-amber-500' : 'bg-emerald-600'
+                                  }`}>
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    LIVE & {inv.badgeLabel}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShareBroadcastPlot(plot);
+                                    }}
+                                    className="inline-flex items-center gap-1 bg-slate-900 hover:bg-black text-[#68D800] text-[10px] font-extrabold px-2 py-0.5 rounded-md border border-slate-700 shadow-xs cursor-pointer hover:scale-105 transition-all"
+                                    title="Share Broadcast on WhatsApp or Copy Link"
+                                  >
+                                    <Share2 className="w-2.5 h-2.5" />
+                                    <span>Share Broadcast</span>
+                                  </button>
+                                </div>
                               )}
                               <span className="text-[10px] font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                                 {plot.dtcpNumber}
                               </span>
                             </div>
                             <h4 
-                              onClick={() => onViewPlotDetails && onViewPlotDetails(plot)}
+                              onClick={() => {
+                                if (onViewPlotDetails) {
+                                  onViewPlotDetails(plot);
+                                }
+                              }}
                               className="font-extrabold text-sm text-black line-clamp-1 hover:text-[#4FAF00] cursor-pointer"
+                              title="Click to view full plot details and blueprint"
                             >
                               {plot.title}
                             </h4>
@@ -1795,77 +1833,65 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                           </div>
                         </div>
 
-                        {/* Live Availability & Sub-Plots Booking Status (Instant Live Update - No Admin Approval Required) */}
-                        <div className="bg-slate-900 text-white p-3 rounded-xl space-y-2.5 border border-slate-800">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 font-bold text-slate-200">
-                              <span className="w-2 h-2 rounded-full bg-[#68D800] animate-pulse" />
-                              <span>Live Website Status (Instant - No Admin Approval):</span>
+                        {/* Real-time Sub-Plots & Current Status Publish Box */}
+                        <div className="bg-slate-900 text-white p-3.5 rounded-xl space-y-3 border border-slate-800">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-200">
+                                <span className={`w-2.5 h-2.5 rounded-full ${inv.isAllSold ? 'bg-rose-500' : inv.isAllBooked ? 'bg-amber-400' : 'bg-[#68D800]'} animate-pulse`} />
+                                <span>Current Project Status:</span>
+                                <span className={`px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider ${
+                                  inv.isAllSold
+                                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                    : inv.isAllBooked
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                }`}>
+                                  {inv.badgeLabel}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-400">
+                                {plot.subPlots && plot.subPlots.length > 0 ? (
+                                  <span>
+                                    Inventory: <strong className="text-emerald-400">{inv.availableCount} Available</strong> • <strong className="text-amber-400">{inv.bookedCount} Booked</strong> • <strong className="text-rose-400">{inv.soldCount} Sold</strong>
+                                  </span>
+                                ) : (
+                                  <span>Standard Whole-Parcel Unit</span>
+                                )}
+                              </div>
                             </div>
-                            
-                            {/* Plot-level direct availability toggle */}
-                            <div className="flex items-center gap-1 self-start sm:self-auto bg-slate-800/80 p-0.5 rounded-lg border border-slate-700">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (onEditPlot) {
-                                    onEditPlot(plot.id, { status: 'verified_broadcasted' });
-                                    setStatusNotice(`Plot "${plot.title}" is now marked as AVAILABLE on the live website!`);
-                                    setTimeout(() => setStatusNotice(''), 4000);
-                                  }
-                                }}
-                                className={`px-2 py-1 rounded text-[10px] font-extrabold transition-colors ${
-                                  plot.status === 'verified_broadcasted'
-                                    ? 'bg-emerald-500 text-white shadow-xs'
-                                    : 'text-slate-400 hover:text-white'
-                                }`}
-                              >
-                                Available
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (onEditPlot) {
-                                    onEditPlot(plot.id, { status: 'booked' });
-                                    setStatusNotice(`Plot "${plot.title}" is now marked as BOOKED on the live website!`);
-                                    setTimeout(() => setStatusNotice(''), 4000);
-                                  }
-                                }}
-                                className={`px-2 py-1 rounded text-[10px] font-extrabold transition-colors ${
-                                  plot.status === 'booked'
-                                    ? 'bg-amber-500 text-black shadow-xs'
-                                    : 'text-slate-400 hover:text-white'
-                                }`}
-                              >
-                                Booked
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (onEditPlot) {
-                                    onEditPlot(plot.id, { status: 'sold' });
-                                    setStatusNotice(`Plot "${plot.title}" is now marked as SOLD on the live website!`);
-                                    setTimeout(() => setStatusNotice(''), 4000);
-                                  }
-                                }}
-                                className={`px-2 py-1 rounded text-[10px] font-extrabold transition-colors ${
-                                  plot.status === 'sold'
-                                    ? 'bg-rose-500 text-white shadow-xs'
-                                    : 'text-slate-400 hover:text-white'
-                                }`}
-                              >
-                                Sold
-                              </button>
-                            </div>
+
+                            {/* Single Primary Action: Publish Current Status / Update & Broadcast */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const computed = getProjectInventoryStatus(plot);
+                                if (onEditPlot) {
+                                  onEditPlot(plot.id, { 
+                                    status: computed.status,
+                                    subPlots: plot.subPlots,
+                                    sellerBroadcastStatus: 'broadcasted',
+                                    adminNotes: `Status updated by seller: ${computed.displayText}. Live broadcast active.`
+                                  });
+                                  setStatusNotice(`Current Status Published! "${plot.title}" updated to ${computed.badgeLabel} on live website! (No admin approval required)`);
+                                  setTimeout(() => setStatusNotice(''), 4500);
+                                }
+                              }}
+                              className="px-3.5 py-2 bg-[#68D800] hover:bg-[#5bc200] active:scale-95 text-black font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto border border-black/20"
+                              title="Click to publish and broadcast current status to website"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 fill-black" />
+                              <span>Publish Current Status / Update & Broadcast</span>
+                            </button>
                           </div>
 
-                          {/* Individual Sub-Plots Quick Status Pills */}
+                          {/* Individual Sub-Plots Interactive Status Pills */}
                           {plot.subPlots && plot.subPlots.length > 0 && (
-                            <div className="pt-2 border-t border-slate-800/80">
-                              <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5 flex-wrap gap-1">
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-[11px] text-slate-400 flex-wrap gap-1">
                                 <span>Click any sub-plot below to toggle (Available ➔ Booked ➔ Sold):</span>
                                 <span className="text-[10px] text-emerald-400 font-bold font-mono">
-                                  {plot.subPlots.filter((p) => p.status === 'available').length} / {plot.subPlots.length} Available
+                                  {inv.availableCount} / {inv.totalCount} Plots Available
                                 </span>
                               </div>
                               <div className="flex flex-wrap items-center gap-1.5">
@@ -1887,9 +1913,18 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                                         const updatedSubPlots = plot.subPlots!.map((item) =>
                                           item.id === sp.id ? { ...item, status: nextStatus } : item
                                         );
+                                        // Compute new project status automatically based on updated sub-plots:
+                                        // Rule: If at least 1 plot is available, status is 'verified_broadcasted' (AVAILABLE)!
+                                        // Only if all plots are sold does it become 'sold'!
+                                        const newInv = getProjectInventoryStatus({ ...plot, subPlots: updatedSubPlots });
                                         if (onEditPlot) {
-                                          onEditPlot(plot.id, { subPlots: updatedSubPlots, status: plot.status });
-                                          setStatusNotice(`"${sp.plotNumber}" updated to ${nextStatus.toUpperCase()} on live website! (No admin approval required)`);
+                                          onEditPlot(plot.id, { 
+                                            subPlots: updatedSubPlots, 
+                                            status: newInv.status,
+                                            sellerBroadcastStatus: 'broadcasted',
+                                            adminNotes: `Plot ${sp.plotNumber} updated to ${nextStatus.toUpperCase()}. Overall project status: ${newInv.displayText}.`
+                                          });
+                                          setStatusNotice(`"${sp.plotNumber}" updated to ${nextStatus.toUpperCase()}! Project status: ${newInv.badgeLabel} on live website.`);
                                           setTimeout(() => setStatusNotice(''), 3500);
                                         }
                                       }}
@@ -1952,7 +1987,8 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                         </button>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               )}
             </div>
@@ -2014,6 +2050,219 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                   className="w-full h-full rounded-xl border border-gray-300 bg-white"
                   sandbox="allow-scripts"
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Share Broadcast Popup Modal for Booked / Sold Plots */}
+        {shareBroadcastPlot && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 animate-in fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-300 flex flex-col">
+              {/* Modal Top Header */}
+              <div className="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    <Radio className="w-5 h-5 animate-pulse text-amber-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-base text-white">Share Broadcast</h3>
+                      <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                        modalInv?.isAllSold ? 'bg-rose-500 text-white' : modalInv?.isAllBooked ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-white'
+                      }`}>
+                        {modalInv ? modalInv.badgeLabel : shareBroadcastPlot.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Seller Direct Broadcast • Instant Live Website Update
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShareBroadcastPlot(null);
+                    setBroadcastCopied(false);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                {/* Notice Banner */}
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-950">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-extrabold block">Seller Broadcast Notice</span>
+                    <span>
+                      For existing plots, you can broadcast updates instantly. As long as at least 1 plot is available, the website will display it as AVAILABLE. Only when all plots are sold does it show SOLD OUT.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Plot Details Preview Card */}
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-mono text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded">
+                        DTCP: {shareBroadcastPlot.dtcpNumber}
+                      </span>
+                      <h4 className="font-black text-sm text-black mt-1">
+                        {shareBroadcastPlot.title}
+                      </h4>
+                      <p className="text-xs text-gray-500">
+                        {shareBroadcastPlot.locality}, {shareBroadcastPlot.district}, {shareBroadcastPlot.state}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-black text-black block">
+                        {formatCurrency(shareBroadcastPlot.totalPrice, activeCurrency)}
+                      </span>
+                      <span className="text-[10px] text-emerald-700 font-bold block">
+                        ₹{shareBroadcastPlot.pricePerSqFt}/sq.ft
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200 text-[11px]">
+                    <div>
+                      <span className="text-gray-400 block">Inventory Breakdown</span>
+                      <span className="font-bold text-black">
+                        {modalInv ? modalInv.displayText : `${shareBroadcastPlot.totalSqFt} sq.ft`}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block">Overall Project Status</span>
+                      <span className={`font-extrabold uppercase ${
+                        modalInv?.isAllSold ? 'text-rose-600' : modalInv?.isAllBooked ? 'text-amber-600' : 'text-emerald-600'
+                      }`}>
+                        {modalInv ? modalInv.badgeLabel : shareBroadcastPlot.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Primary Action 1: Broadcast Live on Website */}
+                <div className="space-y-2 pt-1">
+                  <label className="text-xs font-black text-black uppercase tracking-wider block">
+                    1. Publish & Broadcast Live to Website
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onEditPlot && modalInv) {
+                        onEditPlot(shareBroadcastPlot.id, {
+                          status: modalInv.status,
+                          subPlots: shareBroadcastPlot.subPlots,
+                          sellerBroadcastStatus: 'broadcasted',
+                          adminNotes: `Status marked as ${modalInv.badgeLabel} by seller. Live broadcast active.`,
+                        });
+                      }
+                      setShareBroadcastPlot((prev) => prev && modalInv ? { ...prev, status: modalInv.status, sellerBroadcastStatus: 'broadcasted' } : null);
+                      setStatusNotice(`Broadcast Success! Plot "${shareBroadcastPlot.title}" is now LIVE on the website as ${modalInv?.badgeLabel}!`);
+                      setTimeout(() => setStatusNotice(''), 5000);
+                    }}
+                    className="w-full py-3.5 px-4 bg-[#68D800] hover:bg-[#5bc200] text-black font-black text-sm rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 border-2 border-black/10 active:scale-[0.99] cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-black" />
+                    <span>
+                      Publish Current Status Live to Website ({modalInv?.badgeLabel})
+                    </span>
+                  </button>
+                  <p className="text-[11px] text-gray-500 text-center">
+                    ⚡ Updates automatically on http://localhost:3080/ for normal users without needing admin approval.
+                  </p>
+                </div>
+
+                {/* Secondary Actions: WhatsApp & Copy */}
+                <div className="space-y-2 pt-2 border-t border-gray-100">
+                  <label className="text-xs font-black text-black uppercase tracking-wider block">
+                    2. Share Broadcast to Network
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* WhatsApp Share Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const message = `📢 *LandVest Property Status Broadcast*\n\n` +
+                          `🏷️ Property: *${shareBroadcastPlot.title}*\n` +
+                          `📌 Status: *${modalInv?.badgeLabel || shareBroadcastPlot.status.toUpperCase()}*\n` +
+                          `📜 DTCP Approved: ${shareBroadcastPlot.dtcpNumber}\n` +
+                          `📍 Location: ${shareBroadcastPlot.locality}, ${shareBroadcastPlot.district}\n` +
+                          `📐 Area: ${shareBroadcastPlot.totalSqFt} sq.ft (${shareBroadcastPlot.cents} Cents)\n` +
+                          `💰 Valuation: ₹${shareBroadcastPlot.totalPrice.toLocaleString('en-IN')}\n\n` +
+                          `🌐 View live plot details & blueprint:\nhttp://localhost:3080/`;
+                        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappUrl, '_blank');
+                      }}
+                      className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>Share on WhatsApp</span>
+                    </button>
+
+                    {/* Copy Message Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const message = `📢 LandVest Property Status Broadcast\n\n` +
+                          `Property: ${shareBroadcastPlot.title}\n` +
+                          `Status: ${modalInv?.badgeLabel || shareBroadcastPlot.status.toUpperCase()}\n` +
+                          `DTCP: ${shareBroadcastPlot.dtcpNumber}\n` +
+                          `Location: ${shareBroadcastPlot.locality}, ${shareBroadcastPlot.district}\n` +
+                          `Area: ${shareBroadcastPlot.totalSqFt} sq.ft (${shareBroadcastPlot.cents} Cents)\n` +
+                          `Price: ₹${shareBroadcastPlot.totalPrice.toLocaleString('en-IN')}\n\n` +
+                          `Live Link: http://localhost:3080/`;
+                        navigator.clipboard.writeText(message);
+                        setBroadcastCopied(true);
+                        setTimeout(() => setBroadcastCopied(false), 3000);
+                      }}
+                      className="py-2.5 px-3 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-700"
+                    >
+                      {broadcastCopied ? (
+                        <>
+                          <Check className="w-4 h-4 text-[#68D800]" />
+                          <span className="text-[#68D800]">Copied to Clipboard!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span>Copy Broadcast Text</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Additional Action: View Details / Blueprint */}
+                <div className="pt-2 flex items-center justify-between text-xs border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onViewPlotDetails) onViewPlotDetails(shareBroadcastPlot);
+                      setShareBroadcastPlot(null);
+                    }}
+                    className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:text-emerald-800"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>View Blueprint & Sub-Plots</span>
+                  </button>
+
+                  <a
+                    href="http://localhost:3080/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-bold text-slate-700 hover:text-black underline"
+                  >
+                    <span>Live Website (3080)</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>

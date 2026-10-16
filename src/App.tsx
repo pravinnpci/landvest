@@ -304,8 +304,8 @@ export default function App() {
 
   const handleEditPlot = async (plotId: string, plotData: Partial<Plot>) => {
     const existingPlot = plots.find((p) => p.id === plotId);
-    const wasBroadcasted = existingPlot?.status === 'verified_broadcasted' || existingPlot?.status === 'booked';
-    // When seller updates availability/booked or sub-plots on an active plot, it stays live automatically without needing admin re-approval
+    const wasBroadcasted = existingPlot?.status === 'verified_broadcasted' || existingPlot?.status === 'booked' || existingPlot?.status === 'sold';
+    // When seller updates availability/booked/sold or sub-plots on an active plot, it stays live automatically without needing admin re-approval
     const newStatus = plotData.status || (wasBroadcasted ? existingPlot!.status : 'pending_verification');
     const newNotes = plotData.adminNotes !== undefined
       ? plotData.adminNotes

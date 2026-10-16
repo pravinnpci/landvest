@@ -51,6 +51,7 @@ export interface Plot {
   sellerPhone: string;
   sellerEmail?: string;
   status: 'pending_verification' | 'verified_broadcasted' | 'booked' | 'rejected' | 'sold';
+  sellerBroadcastStatus?: 'pending_broadcast' | 'broadcasted';
   adminNotes?: string;
   expectedAppreciationRate: number; // e.g. 12%, 15%, 18%
   facing: 'North' | 'East' | 'West' | 'South' | 'North-East' | 'Corner Plot';

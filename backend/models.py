@@ -32,6 +32,7 @@ class PlotModel(Base):
     sellerPhone = Column(String(50), nullable=False)
     sellerEmail = Column(String(150), nullable=True)
     status = Column(String(50), default="verified_broadcasted", index=True)
+    sellerBroadcastStatus = Column(String(50), nullable=True, default="broadcasted")
     adminNotes = Column(Text, nullable=True)
     expectedAppreciationRate = Column(Float, default=15.0)
     facing = Column(String(50), default="East")

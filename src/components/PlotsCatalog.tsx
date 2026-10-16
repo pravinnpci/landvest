@@ -45,8 +45,8 @@ export const PlotsCatalog: React.FC<PlotsCatalogProps> = ({
     setCurrentPage(1);
   }, [searchTerm, selectedDistrict, sortBy, maxBudget, itemsPerPage]);
 
-  // We filter broadcasted plots for the public view (including booked plots)
-  const broadcastedPlots = plots.filter((p) => p.status === 'verified_broadcasted' || p.status === 'booked');
+  // We filter broadcasted plots for the public view (including booked & sold plots)
+  const broadcastedPlots = plots.filter((p) => p.status === 'verified_broadcasted' || p.status === 'booked' || p.status === 'sold');
 
   const filteredPlots = broadcastedPlots
     .filter((plot) => {

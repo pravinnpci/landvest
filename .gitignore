@@ -10,3 +10,5 @@ coverage/
 backend/uploads/
 __pycache__/
 *.pyc
+scratch*
+scripts/*.ps1
