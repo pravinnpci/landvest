@@ -303,15 +303,27 @@ export default function App() {
   };
 
   const handleEditPlot = async (plotId: string, plotData: Partial<Plot>) => {
-    const newStatus = plotData.status || 'pending_verification';
-    const newNotes = plotData.adminNotes !== undefined ? plotData.adminNotes : 'Seller revised plot details. Pending Admin re-audit and broadcast approval.';
+    const existingPlot = plots.find((p) => p.id === plotId);
+    const wasBroadcasted = existingPlot?.status === 'verified_broadcasted' || existingPlot?.status === 'booked';
+    // When seller updates availability/booked or sub-plots on an active plot, it stays live automatically without needing admin re-approval
+    const newStatus = plotData.status || (wasBroadcasted ? existingPlot!.status : 'pending_verification');
+    const newNotes = plotData.adminNotes !== undefined
+      ? plotData.adminNotes
+      : (wasBroadcasted
+          ? (existingPlot!.adminNotes || 'Active on website. Verified DTCP plot.')
+          : 'Seller revised plot details. Pending Admin re-audit and broadcast approval.');
+
+    const updatedPlotPayload = {
+      ...plotData,
+      status: newStatus as any,
+      adminNotes: newNotes,
+    };
+
     const updatedPlots = plots.map((p) => {
       if (p.id === plotId) {
         return {
           ...p,
-          ...plotData,
-          status: newStatus as any,
-          adminNotes: newNotes,
+          ...updatedPlotPayload,
           updatedAt: new Date().toISOString().split('T')[0],
         };
       }
@@ -321,7 +333,7 @@ export default function App() {
     storageService.savePlots(updatedPlots);
 
     try {
-      await apiService.updatePlot(plotId, plotData as any);
+      await apiService.updatePlot(plotId, updatedPlotPayload as any);
     } catch (e) {
       console.error('Failed to update plot on server:', e);
     }

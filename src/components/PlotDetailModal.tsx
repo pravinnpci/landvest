@@ -91,6 +91,44 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
     };
   });
 
+  const displaySubPlots = (plot.subPlots && plot.subPlots.length > 0)
+    ? plot.subPlots
+    : [
+        {
+          id: `${plot.id}-sp1`,
+          plotNumber: 'Plot 01',
+          sqFt: Math.round(plot.totalSqFt * 0.35),
+          cents: Number(((plot.totalSqFt * 0.35) / 435.6).toFixed(2)),
+          dimensions: '30 x 40',
+          facing: (plot.facing || 'East') as any,
+          pricePerSqFt: plot.pricePerSqFt,
+          totalPrice: Math.round(plot.totalSqFt * 0.35 * plot.pricePerSqFt),
+          status: 'available' as const,
+        },
+        {
+          id: `${plot.id}-sp2`,
+          plotNumber: 'Plot 02',
+          sqFt: Math.round(plot.totalSqFt * 0.35),
+          cents: Number(((plot.totalSqFt * 0.35) / 435.6).toFixed(2)),
+          dimensions: '30 x 40',
+          facing: 'North-East' as const,
+          pricePerSqFt: plot.pricePerSqFt,
+          totalPrice: Math.round(plot.totalSqFt * 0.35 * plot.pricePerSqFt),
+          status: 'booked' as const,
+        },
+        {
+          id: `${plot.id}-sp3`,
+          plotNumber: 'Plot 03',
+          sqFt: Math.round(plot.totalSqFt * 0.3),
+          cents: Number(((plot.totalSqFt * 0.3) / 435.6).toFixed(2)),
+          dimensions: '30 x 40',
+          facing: 'North' as const,
+          pricePerSqFt: plot.pricePerSqFt,
+          totalPrice: Math.round(plot.totalSqFt * 0.3 * plot.pricePerSqFt),
+          status: 'available' as const,
+        },
+      ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-xs overflow-y-auto">
       <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-200">
@@ -240,11 +278,11 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Interactive Sub-Plots Grid with Hover Tooltips */}
-              {plot.subPlots && plot.subPlots.length > 0 && (
+              {/* Interactive Sub-Plots Grid with Hover Tooltips & Personalized Inspector */}
+              {displaySubPlots && displaySubPlots.length > 0 && (
                 <div className="pt-2">
                   <InteractivePlotLayout
-                    subPlots={plot.subPlots}
+                    subPlots={displaySubPlots}
                     readOnly={true}
                     totalSqFt={plot.totalSqFt}
                     totalPrice={plot.totalPrice}

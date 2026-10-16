@@ -324,11 +324,13 @@ def update_plot(plot_id: str, plot_update: PlotUpdateSchema, db: Session = Depen
         if value is not None:
             setattr(plot, key, value)
     
-    # If status wasn't explicitly provided, default to pending_verification for seller resubmission
+    # If status wasn't explicitly provided, preserve broadcasted or booked status
     if "status" not in update_data or update_data["status"] is None:
-        plot.status = "pending_verification"
+        if plot.status not in ["verified_broadcasted", "booked"]:
+            plot.status = "pending_verification"
     if "adminNotes" not in update_data or update_data["adminNotes"] is None:
-        plot.adminNotes = "Seller revised plot details. Pending Admin re-audit and broadcast approval."
+        if plot.status not in ["verified_broadcasted", "booked"]:
+            plot.adminNotes = "Seller revised plot details. Pending Admin re-audit and broadcast approval."
     db.commit()
     db.refresh(plot)
     return plot

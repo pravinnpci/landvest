@@ -160,6 +160,7 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
   const [locationHtml, setLocationHtml] = useState<string>('');
   const [previewModalHtml, setPreviewModalHtml] = useState<string | null>(null);
   const [previewModalTitle, setPreviewModalTitle] = useState<string>('Document HTML Preview');
+  const [statusNotice, setStatusNotice] = useState<string>('');
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'plot' | 'layout' | 'location') => {
     const file = e.target.files?.[0];
@@ -1050,6 +1051,23 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
         ) : (
           /* LOGGED IN SELLER VIEW */
           <div className="space-y-6 sm:space-y-8">
+            {/* Live Status Notification Banner */}
+            {statusNotice && (
+              <div className="p-4 bg-emerald-50 border-2 border-[#68D800] rounded-2xl flex items-center justify-between text-black text-xs font-bold animate-in fade-in shadow-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#4FAF00] shrink-0" />
+                  <span>{statusNotice}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStatusNotice('')}
+                  className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Active Seller Summary Banner */}
             <div className="bg-white border-2 border-[#68D800] rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
@@ -1775,6 +1793,117 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                             <span className="text-gray-400 block">Road</span>
                             <span className="font-bold text-black">{plot.roadWidthFt} Ft</span>
                           </div>
+                        </div>
+
+                        {/* Live Availability & Sub-Plots Booking Status (Instant Live Update - No Admin Approval Required) */}
+                        <div className="bg-slate-900 text-white p-3 rounded-xl space-y-2.5 border border-slate-800">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-200">
+                              <span className="w-2 h-2 rounded-full bg-[#68D800] animate-pulse" />
+                              <span>Live Website Status (Instant - No Admin Approval):</span>
+                            </div>
+                            
+                            {/* Plot-level direct availability toggle */}
+                            <div className="flex items-center gap-1 self-start sm:self-auto bg-slate-800/80 p-0.5 rounded-lg border border-slate-700">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (onEditPlot) {
+                                    onEditPlot(plot.id, { status: 'verified_broadcasted' });
+                                    setStatusNotice(`Plot "${plot.title}" is now marked as AVAILABLE on the live website!`);
+                                    setTimeout(() => setStatusNotice(''), 4000);
+                                  }
+                                }}
+                                className={`px-2 py-1 rounded text-[10px] font-extrabold transition-colors ${
+                                  plot.status === 'verified_broadcasted'
+                                    ? 'bg-emerald-500 text-white shadow-xs'
+                                    : 'text-slate-400 hover:text-white'
+                                }`}
+                              >
+                                Available
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (onEditPlot) {
+                                    onEditPlot(plot.id, { status: 'booked' });
+                                    setStatusNotice(`Plot "${plot.title}" is now marked as BOOKED on the live website!`);
+                                    setTimeout(() => setStatusNotice(''), 4000);
+                                  }
+                                }}
+                                className={`px-2 py-1 rounded text-[10px] font-extrabold transition-colors ${
+                                  plot.status === 'booked'
+                                    ? 'bg-amber-500 text-black shadow-xs'
+                                    : 'text-slate-400 hover:text-white'
+                                }`}
+                              >
+                                Booked
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (onEditPlot) {
+                                    onEditPlot(plot.id, { status: 'sold' });
+                                    setStatusNotice(`Plot "${plot.title}" is now marked as SOLD on the live website!`);
+                                    setTimeout(() => setStatusNotice(''), 4000);
+                                  }
+                                }}
+                                className={`px-2 py-1 rounded text-[10px] font-extrabold transition-colors ${
+                                  plot.status === 'sold'
+                                    ? 'bg-rose-500 text-white shadow-xs'
+                                    : 'text-slate-400 hover:text-white'
+                                }`}
+                              >
+                                Sold
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Individual Sub-Plots Quick Status Pills */}
+                          {plot.subPlots && plot.subPlots.length > 0 && (
+                            <div className="pt-2 border-t border-slate-800/80">
+                              <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5 flex-wrap gap-1">
+                                <span>Click any sub-plot below to toggle (Available ➔ Booked ➔ Sold):</span>
+                                <span className="text-[10px] text-emerald-400 font-bold font-mono">
+                                  {plot.subPlots.filter((p) => p.status === 'available').length} / {plot.subPlots.length} Available
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {plot.subPlots.map((sp) => {
+                                  const statusCycle: Array<SubPlot['status']> = ['available', 'booked', 'sold'];
+                                  const nextStatus = statusCycle[(statusCycle.indexOf(sp.status || 'available') + 1) % statusCycle.length];
+                                  const badgeClass =
+                                    sp.status === 'sold'
+                                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                                      : sp.status === 'booked'
+                                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30';
+
+                                  return (
+                                    <button
+                                      key={sp.id}
+                                      type="button"
+                                      onClick={() => {
+                                        const updatedSubPlots = plot.subPlots!.map((item) =>
+                                          item.id === sp.id ? { ...item, status: nextStatus } : item
+                                        );
+                                        if (onEditPlot) {
+                                          onEditPlot(plot.id, { subPlots: updatedSubPlots, status: plot.status });
+                                          setStatusNotice(`"${sp.plotNumber}" updated to ${nextStatus.toUpperCase()} on live website! (No admin approval required)`);
+                                          setTimeout(() => setStatusNotice(''), 3500);
+                                        }
+                                      }}
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${badgeClass}`}
+                                      title={`Click to change status to ${nextStatus.toUpperCase()}`}
+                                    >
+                                      <span>{sp.plotNumber}:</span>
+                                      <span className="uppercase font-extrabold">{sp.status}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Submitter User Profile Details */}

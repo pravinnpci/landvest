@@ -112,11 +112,20 @@ export const PlotCard: React.FC<PlotCardProps> = ({
             </span>
           </div>
 
-          {/* Broadcast Status Badge */}
-          {isVerified ? (
+          {/* Broadcast / Availability Status Badge */}
+          {plot.status === 'booked' ? (
+            <span className="inline-flex items-center gap-1 bg-amber-400 text-black font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+              BOOKED
+            </span>
+          ) : plot.status === 'sold' ? (
+            <span className="inline-flex items-center gap-1 bg-rose-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
+              SOLD
+            </span>
+          ) : isVerified ? (
             <span className="inline-flex items-center gap-1 bg-emerald-600 text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
               <CheckCircle2 className="w-3 h-3 text-white" />
-              BROADCASTED
+              AVAILABLE
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 bg-amber-500 text-black font-bold text-[10px] px-2.5 py-1 rounded-full shadow-xs">
