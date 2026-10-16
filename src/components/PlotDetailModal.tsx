@@ -13,10 +13,15 @@ import {
   Layers, 
   Send,
   Coins,
-  ArrowUpRight
+  ArrowUpRight,
+  FileCode,
+  ExternalLink,
+  Download
 } from 'lucide-react';
 import { CurrencyCode, Plot } from '../types';
 import { formatCurrency, formatRatePerSqFt } from '../utils/currency';
+import { InteractivePlotLayout } from './InteractivePlotLayout';
+import { previewHtmlInNewTab, downloadHtmlFile } from '../utils/htmlImageConverter';
 
 interface PlotDetailModalProps {
   plot: Plot | null;
@@ -202,10 +207,23 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
           )}
 
           {activeTab === 'layout' && (
-            <div className="space-y-3">
-              <div className="p-3 bg-[#EBFBD5] border border-[#68D800]/40 rounded-xl text-xs text-black font-semibold flex items-center justify-between">
+            <div className="space-y-4">
+              <div className="p-3 bg-[#EBFBD5] border border-[#68D800]/40 rounded-xl text-xs text-black font-semibold flex items-center justify-between flex-wrap gap-2">
                 <span>Official DTCP Demarcated Masterplan with 30ft/40ft Blacktop Roads</span>
-                <span className="font-mono text-emerald-800">Approved Layout</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-emerald-800">Approved Layout</span>
+                  {plot.layoutHtml && (
+                    <button
+                      type="button"
+                      onClick={() => previewHtmlInNewTab(plot.layoutHtml!)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-black text-white hover:bg-gray-800 rounded-lg text-[11px] font-bold shadow-xs transition-colors"
+                    >
+                      <FileCode className="w-3 h-3 text-[#68D800]" />
+                      <span>Open Interactive HTML Masterplan</span>
+                      <ExternalLink className="w-3 h-3 ml-0.5" />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden bg-gray-900 border border-gray-200 flex items-center justify-center relative">
                 <img
@@ -221,6 +239,21 @@ export const PlotDetailModal: React.FC<PlotDetailModalProps> = ({
                   Facing: {plot.facing} • Road: {plot.roadWidthFt} Ft Wide
                 </div>
               </div>
+
+              {/* Interactive Sub-Plots Grid with Hover Tooltips */}
+              {plot.subPlots && plot.subPlots.length > 0 && (
+                <div className="pt-2">
+                  <InteractivePlotLayout
+                    subPlots={plot.subPlots}
+                    readOnly={true}
+                    totalSqFt={plot.totalSqFt}
+                    totalPrice={plot.totalPrice}
+                    pricePerSqFt={plot.pricePerSqFt}
+                    expectedAppreciationRate={plot.expectedAppreciationRate}
+                    activeCurrency={activeCurrency}
+                  />
+                </div>
+              )}
             </div>
           )}
 

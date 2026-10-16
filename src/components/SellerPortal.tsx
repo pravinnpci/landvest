@@ -21,12 +21,18 @@ import {
   MapPin,
   X,
   Coins,
-  Maximize2
+  Maximize2,
+  FileCode,
+  Download,
+  Eye,
+  RefreshCw
 } from 'lucide-react';
-import { Plot, Seller, CurrencyCode } from '../types';
+import { Plot, Seller, CurrencyCode, SubPlot } from '../types';
 import { formatCurrency, formatRatePerSqFt, CURRENCIES } from '../utils/currency';
 import { getPlotFallbackImage } from './PlotCard';
 import { apiService } from '../services/api';
+import { InteractivePlotLayout } from './InteractivePlotLayout';
+import { convertImageToHtml, downloadHtmlFile, previewHtmlInNewTab } from '../utils/htmlImageConverter';
 
 const COUNTRIES = [
   { code: 'IN', name: 'India' },
@@ -147,6 +153,14 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
   );
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
+  // Sub-Plots Breakdown & HTML Document States
+  const [subPlots, setSubPlots] = useState<SubPlot[]>([]);
+  const [layoutHtml, setLayoutHtml] = useState<string>('');
+  const [plotHtml, setPlotHtml] = useState<string>('');
+  const [locationHtml, setLocationHtml] = useState<string>('');
+  const [previewModalHtml, setPreviewModalHtml] = useState<string | null>(null);
+  const [previewModalTitle, setPreviewModalTitle] = useState<string>('Document HTML Preview');
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'plot' | 'layout' | 'location') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -165,17 +179,73 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
     reader.readAsDataURL(file);
 
     try {
+      // 1. Convert image to interactive HTML document representation
+      const htmlResult = await convertImageToHtml(file, {
+        title: title || 'DTCP Approved Plot & Masterplan Document',
+        category: target,
+        dtcpNumber,
+        locality,
+        district,
+        state: stateName,
+        totalSqFt,
+        totalPrice: calculatedTotalPrice,
+        expectedAppreciationRate,
+        subPlots,
+        sellerName: currentSeller?.companyName || currentSeller?.name,
+        sellerPhone: currentSeller?.phone,
+      });
+
+      if (target === 'layout') setLayoutHtml(htmlResult.htmlContent);
+      if (target === 'plot') setPlotHtml(htmlResult.htmlContent);
+      if (target === 'location') setLocationHtml(htmlResult.htmlContent);
+
+      // 2. Upload original image file to backend
       const uploadedUrl = await apiService.uploadFile(file);
       if (uploadedUrl) {
         if (target === 'plot') setPlotImageUrl(uploadedUrl);
         if (target === 'layout') setLayoutPlanUrl(uploadedUrl);
         if (target === 'location') setLocationImageUrl(uploadedUrl);
       }
+
+      // 3. Upload converted HTML document file to backend
+      try {
+        await apiService.uploadFile(htmlResult.htmlFile);
+      } catch (htmlErr) {
+        console.warn('HTML document upload fallback note:', htmlErr);
+      }
     } catch (err) {
-      console.warn('Backend upload fallback (using local image):', err);
+      console.warn('Backend upload fallback (using local image/HTML):', err);
     } finally {
       setIsUploading(null);
       e.target.value = ''; // Reset input to allow re-uploading same file
+    }
+  };
+
+  // Re-generate HTML document when sub-plots or pricing changes
+  const handleRegenerateHtml = async (target: 'layout' | 'plot' | 'location') => {
+    const imgSrc = target === 'layout' ? layoutPlanUrl : target === 'plot' ? plotImageUrl : locationImageUrl;
+    try {
+      const res = await convertImageToHtml(imgSrc, {
+        title: title || 'DTCP Approved Plot & Masterplan Document',
+        category: target,
+        dtcpNumber,
+        locality,
+        district,
+        state: stateName,
+        totalSqFt,
+        totalPrice: calculatedTotalPrice,
+        expectedAppreciationRate,
+        subPlots,
+        sellerName: currentSeller?.companyName || currentSeller?.name,
+        sellerPhone: currentSeller?.phone,
+      });
+      if (target === 'layout') setLayoutHtml(res.htmlContent);
+      if (target === 'plot') setPlotHtml(res.htmlContent);
+      if (target === 'location') setLocationHtml(res.htmlContent);
+      return res.htmlContent;
+    } catch (e) {
+      console.error('Failed to regenerate HTML document:', e);
+      return null;
     }
   };
 
@@ -207,6 +277,10 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
     setPlotImageUrl(plot.plotImages?.[0] || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80');
     setLayoutPlanUrl(plot.layoutPlanImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80');
     setLocationImageUrl(plot.locationImage || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80');
+    setSubPlots(plot.subPlots || []);
+    setLayoutHtml(plot.layoutHtml || '');
+    setPlotHtml(plot.plotImageHtml || '');
+    setLocationHtml(plot.locationImageHtml || '');
     setOwnerName1(plot.ownerName1 || '');
     setOwnerPhone1(plot.ownerPhone1 || '');
     setOwnerName2(plot.ownerName2 || '');
@@ -219,6 +293,10 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
   const handleCancelForm = () => {
     setIsPostingNew(false);
     setEditingPlot(null);
+    setSubPlots([]);
+    setLayoutHtml('');
+    setPlotHtml('');
+    setLocationHtml('');
   };
 
   // Handle Request OTP via EMAIL (Connected to backend API & SMTP)
@@ -440,6 +518,10 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
         plotImages: [plotImageUrl],
         layoutPlanImage: layoutPlanUrl,
         locationImage: locationImageUrl,
+        layoutHtml: layoutHtml || undefined,
+        plotImageHtml: plotHtml || undefined,
+        locationImageHtml: locationHtml || undefined,
+        subPlots: subPlots && subPlots.length > 0 ? subPlots : undefined,
         ownerName1: ownerName1 || currentSeller.name,
         ownerPhone1: ownerPhone1 || currentSeller.phone,
         ownerName2: ownerName2.trim() || undefined,
@@ -475,6 +557,10 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
       plotImages: [plotImageUrl],
       layoutPlanImage: layoutPlanUrl,
       locationImage: locationImageUrl,
+      layoutHtml: layoutHtml || undefined,
+      plotImageHtml: plotHtml || undefined,
+      locationImageHtml: locationHtml || undefined,
+      subPlots: subPlots && subPlots.length > 0 ? subPlots : undefined,
       ownerName1: ownerName1 || currentSeller.name,
       ownerPhone1: ownerPhone1 || currentSeller.phone,
       ownerName2: ownerName2.trim() || undefined,
@@ -1322,8 +1408,12 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                     <h4 className="font-extrabold text-black text-sm uppercase tracking-wider text-[#4FAF00]">
                       4. Plot Photo, Layout Plan & Location Map
                     </h4>
+                    <p className="text-xs text-gray-500">
+                      Uploaded images are automatically converted to interactive standalone HTML documents with embedded sub-plot breakdown and hover valuation data.
+                    </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                      <div>
+                      {/* Plot Photo */}
+                      <div className="bg-white p-3 rounded-xl border border-gray-200 space-y-2">
                         <div className="flex items-center justify-between mb-1">
                           <label className="block font-bold text-gray-700 text-xs">Plot Photo *</label>
                           <label className="cursor-pointer text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300 hover:bg-emerald-100 flex items-center gap-1">
@@ -1339,7 +1429,7 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                           onChange={(e) => setPlotImageUrl(e.target.value)}
                           className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-black focus:outline-none"
                         />
-                        <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-gray-100 border">
+                        <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 border relative group">
                           <img
                             src={plotImageUrl}
                             alt="Preview"
@@ -1350,9 +1440,47 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                             }}
                           />
                         </div>
+
+                        {/* HTML Document Status & Actions */}
+                        <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between flex-wrap gap-1 text-[11px]">
+                          <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                            <FileCode className="w-3 h-3 text-[#4FAF00]" />
+                            <span>HTML Ready</span>
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const content = plotHtml || await handleRegenerateHtml('plot');
+                                if (content) {
+                                  setPreviewModalTitle('Plot Photo HTML Document');
+                                  setPreviewModalHtml(content);
+                                }
+                              }}
+                              className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded font-bold text-[10px] flex items-center gap-0.5"
+                              title="Preview interactive HTML"
+                            >
+                              <Eye className="w-2.5 h-2.5" />
+                              <span>HTML</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const content = plotHtml || await handleRegenerateHtml('plot');
+                                if (content) downloadHtmlFile(`${title || 'plot'}_photo_document.html`, content);
+                              }}
+                              className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded font-bold text-[10px] flex items-center gap-0.5"
+                              title="Download HTML Document"
+                            >
+                              <Download className="w-2.5 h-2.5" />
+                              <span>Save</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <div>
+                      {/* Layout Blueprint */}
+                      <div className="bg-white p-3 rounded-xl border border-gray-200 space-y-2">
                         <div className="flex items-center justify-between mb-1">
                           <label className="block font-bold text-gray-700 text-xs">Layout Blueprint *</label>
                           <label className="cursor-pointer text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300 hover:bg-emerald-100 flex items-center gap-1">
@@ -1368,7 +1496,7 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                           onChange={(e) => setLayoutPlanUrl(e.target.value)}
                           className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-black focus:outline-none"
                         />
-                        <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-gray-100 border">
+                        <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 border relative group">
                           <img
                             src={layoutPlanUrl}
                             alt="Layout Preview"
@@ -1379,9 +1507,47 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                             }}
                           />
                         </div>
+
+                        {/* HTML Document Status & Actions */}
+                        <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between flex-wrap gap-1 text-[11px]">
+                          <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                            <FileCode className="w-3 h-3 text-[#4FAF00]" />
+                            <span>HTML Ready</span>
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const content = layoutHtml || await handleRegenerateHtml('layout');
+                                if (content) {
+                                  setPreviewModalTitle('Layout Blueprint HTML Document');
+                                  setPreviewModalHtml(content);
+                                }
+                              }}
+                              className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded font-bold text-[10px] flex items-center gap-0.5"
+                              title="Preview interactive HTML"
+                            >
+                              <Eye className="w-2.5 h-2.5" />
+                              <span>HTML</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const content = layoutHtml || await handleRegenerateHtml('layout');
+                                if (content) downloadHtmlFile(`${title || 'plot'}_layout_document.html`, content);
+                              }}
+                              className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded font-bold text-[10px] flex items-center gap-0.5"
+                              title="Download HTML Document"
+                            >
+                              <Download className="w-2.5 h-2.5" />
+                              <span>Save</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <div>
+                      {/* Location Map */}
+                      <div className="bg-white p-3 rounded-xl border border-gray-200 space-y-2">
                         <div className="flex items-center justify-between mb-1">
                           <label className="block font-bold text-gray-700 text-xs">Location Map *</label>
                           <label className="cursor-pointer text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300 hover:bg-emerald-100 flex items-center gap-1">
@@ -1397,7 +1563,7 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                           onChange={(e) => setLocationImageUrl(e.target.value)}
                           className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-black focus:outline-none"
                         />
-                        <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-gray-100 border">
+                        <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 border relative group">
                           <img
                             src={locationImageUrl}
                             alt="Location Preview"
@@ -1408,8 +1574,61 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                             }}
                           />
                         </div>
+
+                        {/* HTML Document Status & Actions */}
+                        <div className="pt-1.5 border-t border-gray-100 flex items-center justify-between flex-wrap gap-1 text-[11px]">
+                          <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                            <FileCode className="w-3 h-3 text-[#4FAF00]" />
+                            <span>HTML Ready</span>
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const content = locationHtml || await handleRegenerateHtml('location');
+                                if (content) {
+                                  setPreviewModalTitle('Location Map HTML Document');
+                                  setPreviewModalHtml(content);
+                                }
+                              }}
+                              className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded font-bold text-[10px] flex items-center gap-0.5"
+                              title="Preview interactive HTML"
+                            >
+                              <Eye className="w-2.5 h-2.5" />
+                              <span>HTML</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const content = locationHtml || await handleRegenerateHtml('location');
+                                if (content) downloadHtmlFile(`${title || 'plot'}_location_document.html`, content);
+                              }}
+                              className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded font-bold text-[10px] flex items-center gap-0.5"
+                              title="Download HTML Document"
+                            >
+                              <Download className="w-2.5 h-2.5" />
+                              <span>Save</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Row 5: Demarcate Sub-Plots & Interactive Hover Breakdowns */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <InteractivePlotLayout
+                      subPlots={subPlots}
+                      onChange={(updatedPlots) => {
+                        setSubPlots(updatedPlots);
+                      }}
+                      readOnly={false}
+                      totalSqFt={totalSqFt}
+                      totalPrice={calculatedTotalPrice}
+                      pricePerSqFt={pricePerSqFt}
+                      expectedAppreciationRate={expectedAppreciationRate}
+                      activeCurrency={activeCurrency}
+                    />
                   </div>
 
                   {/* Highlights */}
@@ -1607,6 +1826,66 @@ export const SellerPortal: React.FC<SellerPortalProps> = ({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* HTML Document Full Interactive Preview Modal */}
+        {previewModalHtml && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-6 animate-in fade-in">
+            <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-300">
+              {/* Modal Top Bar */}
+              <div className="px-4 py-3 bg-[#090e17] text-white flex items-center justify-between border-b border-gray-800 shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 rounded-lg bg-[#68D800]/20 text-[#68D800]">
+                    <FileCode className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <h4 className="font-extrabold text-sm sm:text-base text-white">
+                      {previewModalTitle}
+                    </h4>
+                    <p className="text-[11px] text-gray-400">
+                      Standalone Interactive HTML Document • Hover over plots to inspect live valuation
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => previewHtmlInNewTab(previewModalHtml)}
+                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">New Tab</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadHtmlFile(`${previewModalTitle.toLowerCase().replace(/\s+/g, '_')}.html`, previewModalHtml)}
+                    className="px-3 py-1.5 bg-[#68D800] hover:bg-[#5bc200] text-black rounded-lg text-xs font-extrabold transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Download HTML</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewModalHtml(null)}
+                    className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Iframe Rendering the Converted HTML */}
+              <div className="flex-1 w-full bg-slate-100 p-1 sm:p-2 overflow-hidden">
+                <iframe
+                  title="Document Preview"
+                  srcDoc={previewModalHtml}
+                  className="w-full h-full rounded-xl border border-gray-300 bg-white"
+                  sandbox="allow-scripts"
+                />
+              </div>
             </div>
           </div>
         )}

@@ -32,6 +32,10 @@ async def lifespan(app: FastAPI):
             try:
                 with engine.connect() as conn:
                     conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "sellerEmail" VARCHAR(150);'))
+                    conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "subPlots" JSON;'))
+                    conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "layoutHtml" TEXT;'))
+                    conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "plotImageHtml" TEXT;'))
+                    conn.execute(text('ALTER TABLE plots ADD COLUMN IF NOT EXISTS "locationImageHtml" TEXT;'))
                     # Automatically restore plots that were accidentally suspended if their seller is currently active
                     conn.execute(text('''
                         UPDATE plots 
@@ -90,6 +94,10 @@ class PlotCreateSchema(BaseModel):
     plotImages: List[str] = []
     locationImage: str = ""
     layoutPlanImage: str = ""
+    layoutHtml: Optional[str] = None
+    plotImageHtml: Optional[str] = None
+    locationImageHtml: Optional[str] = None
+    subPlots: Optional[List[dict]] = []
     ownerName1: str
     ownerPhone1: str
     ownerName2: Optional[str] = None
@@ -119,6 +127,10 @@ class PlotUpdateSchema(BaseModel):
     plotImages: Optional[List[str]] = []
     locationImage: Optional[str] = ""
     layoutPlanImage: Optional[str] = ""
+    layoutHtml: Optional[str] = None
+    plotImageHtml: Optional[str] = None
+    locationImageHtml: Optional[str] = None
+    subPlots: Optional[List[dict]] = None
     ownerName1: Optional[str] = None
     ownerPhone1: Optional[str] = None
     ownerName2: Optional[str] = None

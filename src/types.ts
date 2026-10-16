@@ -8,6 +8,21 @@ export interface CurrencyInfo {
   rateAgainstINR: number; // 1 CurrencyUnit = X INR (e.g. 1 USD = 86.5 INR)
 }
 
+export interface SubPlot {
+  id: string;
+  plotNumber: string; // e.g. "Plot 01"
+  sqFt: number;
+  cents: number;
+  dimensions?: string; // e.g. "30 x 40"
+  facing?: 'North' | 'East' | 'West' | 'South' | 'North-East' | 'Corner Plot';
+  pricePerSqFt: number;
+  totalPrice: number;
+  status: 'available' | 'booked' | 'sold';
+  year1Amount?: number;
+  year2Amount?: number;
+  year5Amount?: number;
+}
+
 export interface Plot {
   id: string;
   title: string;
@@ -23,6 +38,10 @@ export interface Plot {
   plotImages: string[];
   locationImage: string;
   layoutPlanImage: string;
+  layoutHtml?: string;
+  plotImageHtml?: string;
+  locationImageHtml?: string;
+  subPlots?: SubPlot[];
   ownerName1: string;
   ownerPhone1: string;
   ownerName2?: string;
