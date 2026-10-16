@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>LandVest - Redirecting...</title>
+    <script>
+      // Single Page App redirect for GitHub Pages
+      (function() {
+        var path = window.location.pathname;
+        var repoBase = '/landvest/';
+        var query = window.location.search || '';
+        var hash = window.location.hash || '';
+
+        // If path begins with /landvest/
+        if (path.indexOf(repoBase) === 0) {
+          var route = path.slice(repoBase.length);
+          if (route.length > 0) {
+            window.location.replace(repoBase + '#' + route + (query ? '&' + query.slice(1) : '') + hash);
+            return;
+          }
+        }
+
+        // If accessed directly without /landvest/ prefix (e.g., /seller)
+        var cleanPath = path.replace(/^\/+/, '');
+        window.location.replace(repoBase + '#' + cleanPath + (query ? '&' + query.slice(1) : '') + hash);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to <a href="/landvest/">LandVest</a>...</p>
+  </body>
+</html>
